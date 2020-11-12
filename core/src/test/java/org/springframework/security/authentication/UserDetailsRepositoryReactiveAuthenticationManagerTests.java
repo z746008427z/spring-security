@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsPasswordService;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
@@ -34,10 +35,12 @@ import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
@@ -165,7 +168,7 @@ public class UserDetailsRepositoryReactiveAuthenticationManagerTests {
 		verifyZeroInteractions(this.postAuthenticationChecks);
 	}
 
-	@Test(expected = AccountExpiredException.class)
+	@Test
 	public void authenticateWhenAccountExpiredThenException() {
 		this.manager.setPasswordEncoder(this.encoder);
 		// @formatter:off
@@ -178,10 +181,11 @@ public class UserDetailsRepositoryReactiveAuthenticationManagerTests {
 		given(this.userDetailsService.findByUsername(any())).willReturn(Mono.just(expiredUser));
 		UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(expiredUser,
 				expiredUser.getPassword());
-		this.manager.authenticate(token).block();
+		assertThatExceptionOfType(AccountExpiredException.class)
+				.isThrownBy(() -> this.manager.authenticate(token).block());
 	}
 
-	@Test(expected = LockedException.class)
+	@Test
 	public void authenticateWhenAccountLockedThenException() {
 		this.manager.setPasswordEncoder(this.encoder);
 		// @formatter:off
@@ -194,10 +198,10 @@ public class UserDetailsRepositoryReactiveAuthenticationManagerTests {
 		given(this.userDetailsService.findByUsername(any())).willReturn(Mono.just(lockedUser));
 		UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(lockedUser,
 				lockedUser.getPassword());
-		this.manager.authenticate(token).block();
+		assertThatExceptionOfType(LockedException.class).isThrownBy(() -> this.manager.authenticate(token).block());
 	}
 
-	@Test(expected = DisabledException.class)
+	@Test
 	public void authenticateWhenAccountDisabledThenException() {
 		this.manager.setPasswordEncoder(this.encoder);
 		// @formatter:off
@@ -210,7 +214,21 @@ public class UserDetailsRepositoryReactiveAuthenticationManagerTests {
 		given(this.userDetailsService.findByUsername(any())).willReturn(Mono.just(disabledUser));
 		UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(disabledUser,
 				disabledUser.getPassword());
-		this.manager.authenticate(token).block();
+		assertThatExceptionOfType(DisabledException.class).isThrownBy(() -> this.manager.authenticate(token).block());
+	}
+
+	@Test
+	public void setMessageSourceWhenNullThenThrowsException() {
+		assertThatIllegalArgumentException().isThrownBy(() -> this.manager.setMessageSource(null));
+	}
+
+	@Test
+	public void setMessageSourceWhenNotNullThenCanGet() {
+		MessageSource source = mock(MessageSource.class);
+		this.manager.setMessageSource(source);
+		String code = "code";
+		this.manager.messages.getMessage(code);
+		verify(source).getMessage(eq(code), any(), any());
 	}
 
 }

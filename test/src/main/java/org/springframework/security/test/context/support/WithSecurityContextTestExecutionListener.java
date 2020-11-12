@@ -29,9 +29,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.TestContext;
+import org.springframework.test.context.TestContextAnnotationUtils;
 import org.springframework.test.context.TestExecutionListener;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
-import org.springframework.test.util.MetaAnnotationUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
@@ -97,11 +97,14 @@ public class WithSecurityContextTestExecutionListener extends AbstractTestExecut
 	}
 
 	private TestSecurityContext createTestSecurityContext(Class<?> annotated, TestContext context) {
-		MetaAnnotationUtils.AnnotationDescriptor<WithSecurityContext> withSecurityContextDescriptor = MetaAnnotationUtils
+		TestContextAnnotationUtils.AnnotationDescriptor<WithSecurityContext> withSecurityContextDescriptor = TestContextAnnotationUtils
 				.findAnnotationDescriptor(annotated, WithSecurityContext.class);
-		WithSecurityContext withSecurityContext = (withSecurityContextDescriptor != null)
-				? withSecurityContextDescriptor.getAnnotation() : null;
-		return createTestSecurityContext(annotated, withSecurityContext, context);
+		if (withSecurityContextDescriptor == null) {
+			return null;
+		}
+		WithSecurityContext withSecurityContext = withSecurityContextDescriptor.getAnnotation();
+		Class<?> rootDeclaringClass = withSecurityContextDescriptor.getRootDeclaringClass();
+		return createTestSecurityContext(rootDeclaringClass, withSecurityContext, context);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

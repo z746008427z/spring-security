@@ -17,6 +17,7 @@
 package org.springframework.security.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 import org.apache.commons.logging.Log;
@@ -42,7 +43,7 @@ public final class SpringSecurityCoreVersion {
 	 * N.B. Classes are not intended to be serializable between different versions. See
 	 * SEC-1709 for why we still need a serial version.
 	 */
-	public static final long SERIAL_VERSION_UID = 540L;
+	public static final long SERIAL_VERSION_UID = 550L;
 
 	static final String MIN_SPRING_VERSION = getSpringVersion();
 
@@ -103,9 +104,9 @@ public final class SpringSecurityCoreVersion {
 	 */
 	private static String getSpringVersion() {
 		Properties properties = new Properties();
-		try {
-			properties.load(SpringSecurityCoreVersion.class.getClassLoader()
-					.getResourceAsStream("META-INF/spring-security.versions"));
+		try (InputStream is = SpringSecurityCoreVersion.class.getClassLoader()
+				.getResourceAsStream("META-INF/spring-security.versions")) {
+			properties.load(is);
 		}
 		catch (IOException | NullPointerException ex) {
 			return null;

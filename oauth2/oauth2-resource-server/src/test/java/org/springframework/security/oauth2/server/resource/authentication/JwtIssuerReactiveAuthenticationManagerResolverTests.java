@@ -41,11 +41,15 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.jose.TestKeys;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
+import org.springframework.security.oauth2.server.resource.web.server.ServerBearerTokenAuthenticationConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests for {@link JwtIssuerReactiveAuthenticationManagerResolver}
@@ -59,6 +63,8 @@ public class JwtIssuerReactiveAuthenticationManagerResolverTests {
 			+ "}";
 	// @formatter:on
 
+	private static final String JWK_SET = "{\"keys\":[{\"kty\":\"RSA\",\"e\":\"AQAB\",\"use\":\"sig\",\"kid\":\"one\",\"n\":\"oXJ8OyOv_eRnce4akdanR4KYRfnC2zLV4uYNQpcFn6oHL0dj7D6kxQmsXoYgJV8ZVDn71KGmuLvolxsDncc2UrhyMBY6DVQVgMSVYaPCTgW76iYEKGgzTEw5IBRQL9w3SRJWd3VJTZZQjkXef48Ocz06PGF3lhbz4t5UEZtdF4rIe7u-977QwHuh7yRPBQ3sII-cVoOUMgaXB9SHcGF2iZCtPzL_IffDUcfhLQteGebhW8A6eUHgpD5A1PQ-JCw_G7UOzZAjjDjtNM2eqm8j-Ms_gqnm4MiCZ4E-9pDN77CAAPVN7kuX6ejs9KBXpk01z48i9fORYk9u7rAkh1HuQw\"}]}";
+
 	private String jwt = jwt("iss", "trusted");
 
 	private String evil = jwt("iss", "\"");
@@ -71,6 +77,8 @@ public class JwtIssuerReactiveAuthenticationManagerResolverTests {
 			String issuer = server.url("").toString();
 			server.enqueue(new MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json")
 					.setBody(String.format(DEFAULT_RESPONSE_TEMPLATE, issuer, issuer)));
+			server.enqueue(new MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json")
+					.setBody(JWK_SET));
 			JWSObject jws = new JWSObject(new JWSHeader(JWSAlgorithm.RS256),
 					new Payload(new JSONObject(Collections.singletonMap(JwtClaimNames.ISS, issuer))));
 			jws.sign(new RSASSASigner(TestKeys.DEFAULT_PRIVATE_KEY));
@@ -105,6 +113,20 @@ public class JwtIssuerReactiveAuthenticationManagerResolverTests {
 				(issuer) -> Mono.just(authenticationManager));
 		MockServerWebExchange exchange = withBearerToken(this.jwt);
 		assertThat(authenticationManagerResolver.resolve(exchange).block()).isSameAs(authenticationManager);
+	}
+
+	@Test
+	public void resolveWhenUsingCustomIssuerAuthenticationManagerResolverAndCustomServerBearerTokenAuthenticationConverterThenUses() {
+		ReactiveAuthenticationManager authenticationManager = mock(ReactiveAuthenticationManager.class);
+		JwtIssuerReactiveAuthenticationManagerResolver authenticationManagerResolver = new JwtIssuerReactiveAuthenticationManagerResolver(
+				(issuer) -> Mono.just(authenticationManager));
+		ServerBearerTokenAuthenticationConverter serverBearerTokenAuthenticationConverterSpy = spy(
+				new ServerBearerTokenAuthenticationConverter());
+		authenticationManagerResolver
+				.setServerBearerTokenAuthenticationConverter(serverBearerTokenAuthenticationConverterSpy);
+		MockServerWebExchange exchange = withBearerToken(this.jwt);
+		assertThat(authenticationManagerResolver.resolve(exchange).block()).isSameAs(authenticationManager);
+		verify(serverBearerTokenAuthenticationConverterSpy).convert(any());
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 the original author or authors.
+ * Copyright 2004-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -48,10 +49,12 @@ import org.springframework.security.web.savedrequest.SavedRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 /**
@@ -231,14 +234,15 @@ public class ExceptionTranslationFilterTests {
 		assertThat(getSavedRequestUrl(request)).isEqualTo("http://localhost:8080/mycontext/secure/page.html");
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void startupDetectsMissingAuthenticationEntryPoint() {
-		new ExceptionTranslationFilter(null);
+		assertThatIllegalArgumentException().isThrownBy(() -> new ExceptionTranslationFilter(null));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void startupDetectsMissingRequestCache() {
-		new ExceptionTranslationFilter(this.mockEntryPoint, null);
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> new ExceptionTranslationFilter(this.mockEntryPoint, null));
 	}
 
 	@Test
@@ -258,16 +262,12 @@ public class ExceptionTranslationFilterTests {
 		ExceptionTranslationFilter filter = new ExceptionTranslationFilter(this.mockEntryPoint);
 		filter.afterPropertiesSet();
 		Exception[] exceptions = { new IOException(), new ServletException(), new RuntimeException() };
-		for (Exception e : exceptions) {
+		for (Exception exception : exceptions) {
 			FilterChain fc = mock(FilterChain.class);
-			willThrow(e).given(fc).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
-			try {
-				filter.doFilter(new MockHttpServletRequest(), new MockHttpServletResponse(), fc);
-				fail("Should have thrown Exception");
-			}
-			catch (Exception expected) {
-				assertThat(expected).isSameAs(e);
-			}
+			willThrow(exception).given(fc).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+			assertThatExceptionOfType(Exception.class)
+					.isThrownBy(() -> filter.doFilter(new MockHttpServletRequest(), new MockHttpServletResponse(), fc))
+					.isSameAs(exception);
 		}
 	}
 
@@ -285,6 +285,22 @@ public class ExceptionTranslationFilterTests {
 		assertThatExceptionOfType(ServletException.class).isThrownBy(() -> filter.doFilter(request, response, chain))
 				.withCauseInstanceOf(AccessDeniedException.class);
 		verifyZeroInteractions(this.mockEntryPoint);
+	}
+
+	@Test
+	public void setMessageSourceWhenNullThenThrowsException() {
+		ExceptionTranslationFilter filter = new ExceptionTranslationFilter(this.mockEntryPoint);
+		assertThatIllegalArgumentException().isThrownBy(() -> filter.setMessageSource(null));
+	}
+
+	@Test
+	public void setMessageSourceWhenNotNullThenCanGet() {
+		MessageSource source = mock(MessageSource.class);
+		ExceptionTranslationFilter filter = new ExceptionTranslationFilter(this.mockEntryPoint);
+		filter.setMessageSource(source);
+		String code = "code";
+		filter.messages.getMessage(code);
+		verify(source).getMessage(eq(code), any(), any());
 	}
 
 	private AuthenticationEntryPoint mockEntryPoint = (request, response, authException) -> response

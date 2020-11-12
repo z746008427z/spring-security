@@ -1,5 +1,7 @@
 image::https://badges.gitter.im/Join%20Chat.svg[Gitter,link=https://gitter.im/spring-projects/spring-security?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge]
 
+image:https://github.com/spring-projects/spring-security/workflows/CI/badge.svg?branch=master["Build Status", link="https://github.com/spring-projects/spring-security/actions?query=workflow%3ACI"]
+
 = Spring Security
 
 Spring Security provides security services for the https://docs.spring.io[Spring IO Platform]. Spring Security 5.0 requires Spring 5.0 as
@@ -11,7 +13,7 @@ For a detailed list of features and access to the latest release, please visit h
 Please see our https://github.com/spring-projects/.github/blob/master/CODE_OF_CONDUCT.md[code of conduct]
 
 == Downloading Artifacts
-See https://github.com/spring-projects/spring-framework/wiki/Downloading-Spring-artifacts[downloading Spring artifacts] for Maven repository information.
+See https://docs.spring.io/spring-security/site/docs/current/reference/html5/#getting[Getting Spring Security] for how to obtain Spring Security.
 
 == Documentation
 Be sure to read the https://docs.spring.io/spring-security/site/docs/current/reference/htmlsingle/[Spring Security Reference].

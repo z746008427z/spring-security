@@ -72,7 +72,7 @@ class OpaqueTokenDslTests {
         this.mockMvc.get("/authenticated") {
             header("Authorization", "Bearer token")
         }.andExpect {
-            status { isOk }
+            status { isOk() }
             content { string("test-subject") }
         }
     }
@@ -176,7 +176,7 @@ class OpaqueTokenDslTests {
     @RestController
     class AuthenticationController {
         @GetMapping("/authenticated")
-        fun authenticated(@AuthenticationPrincipal authentication: Authentication): String {
+        fun authenticated(authentication: Authentication): String {
             return authentication.name
         }
     }

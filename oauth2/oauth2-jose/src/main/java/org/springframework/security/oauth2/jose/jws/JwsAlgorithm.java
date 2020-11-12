@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.security.oauth2.jose.jws;
 
+import org.springframework.security.oauth2.jose.JwaAlgorithm;
+
 /**
  * Super interface for cryptographic algorithms defined by the JSON Web Algorithms (JWA)
  * specification and used by JSON Web Signature (JWS) to digitally sign or create a MAC of
@@ -23,6 +25,7 @@ package org.springframework.security.oauth2.jose.jws;
  *
  * @author Joe Grandja
  * @since 5.2
+ * @see JwaAlgorithm
  * @see <a target="_blank" href="https://tools.ietf.org/html/rfc7518">JSON Web Algorithms
  * (JWA)</a>
  * @see <a target="_blank" href="https://tools.ietf.org/html/rfc7515">JSON Web Signature
@@ -31,8 +34,6 @@ package org.springframework.security.oauth2.jose.jws;
  * "https://tools.ietf.org/html/rfc7518#section-3">Cryptographic Algorithms for Digital
  * Signatures and MACs</a>
  */
-public interface JwsAlgorithm {
-
-	String getName();
+public interface JwsAlgorithm extends JwaAlgorithm {
 
 }
